@@ -165,6 +165,27 @@ class Canvas(QtWidgets.QWidget):
             if not self.current:
                 return
 
+            # project pos to orthogonal directions
+            if int(ev.modifiers()) == QtCore.Qt.ShiftModifier:
+                # first line, snapping to either axis
+                if len(self.current) == 1:
+                    (x0, y0) = self.current[-1].x(), self.current[-1].y()
+                    (x1, y1) = pos.x(), pos.y()
+                    if (abs(x0 - x1) > abs(y0 - y1)):
+                        pos = QtCore.QPoint(x1, y0)
+                    else:
+                        pos = QtCore.QPoint(x0, y1)
+                elif len(self.current) > 1:
+                    (x0, y0) = self.current[-1].x(), self.current[-1].y()
+                    (x1, y1) = self.current[-2].x(), self.current[-2].y()
+                    # unit orthogonal projection vector
+                    (pvx, pvy) = (-(y0 - y1), x0 - x1)
+                    pvlen = (pvx ** 2 + pvy ** 2) ** 0.5
+                    assert(pvlen > 0)
+                    (pvx, pvy) = (pvx / pvlen, pvy / pvlen)
+                    pvlen = pvx * (pos.x() - x0) + pvy * (pos.y() - y0)
+                    pos = QtCore.QPoint(x0 + pvx * pvlen, y0 + pvy * pvlen)
+
             color = self.lineColor
             if self.outOfPixmap(pos):
                 # Don't allow the user to draw outside the pixmap.
@@ -178,6 +199,7 @@ class Canvas(QtWidgets.QWidget):
                 color = self.current.line_color
                 self.overrideCursor(CURSOR_POINT)
                 self.current.highlightVertex(0, Shape.NEAR_VERTEX)
+
             if self.createMode in ['polygon', 'linestrip']:
                 self.line[0] = self.current[-1]
                 self.line[1] = pos
