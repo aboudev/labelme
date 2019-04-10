@@ -28,14 +28,19 @@ def main():
     parser.add_argument('input_dir', help='input annotated directory')
     parser.add_argument('output_dir', help='output dataset directory')
     parser.add_argument('--labels', help='labels file', required=True)
+    parser.add_argument('--ann_split', help='annotation split file', required=True)
     args = parser.parse_args()
 
     if osp.exists(args.output_dir):
         print('Output directory already exists:', args.output_dir)
         sys.exit(1)
     os.makedirs(args.output_dir)
-    os.makedirs(osp.join(args.output_dir, 'JPEGImages'))
     print('Creating dataset:', args.output_dir)
+
+    image_dir = osp.join(args.output_dir, 'images')
+    os.makedirs(image_dir)
+    annotation_dir = osp.join(args.output_dir, 'annotations')
+    os.makedirs(annotation_dir)
 
     now = datetime.datetime.now()
 
@@ -81,27 +86,25 @@ def main():
             name=class_name,
         ))
 
-    out_ann_file = osp.join(args.output_dir, 'annotations.json')
-    label_files = glob.glob(osp.join(args.input_dir, '*.json'))
-    for image_id, label_file in enumerate(label_files):
+    data_split = osp.splitext(osp.basename(args.ann_split))[0]
+    out_ann_file = osp.join(annotation_dir, 'instances_%s.json' % (data_split))
+    for image_id, in_ann_file in enumerate(open(args.ann_split).readlines()):
+        label_file = osp.join(args.input_dir, in_ann_file.strip())
         print('Generating dataset from:', label_file)
         with open(label_file) as f:
             label_data = json.load(f)
-
-        base = osp.splitext(osp.basename(label_file))[0]
-        out_img_file = osp.join(
-            args.output_dir, 'JPEGImages', base + '.jpg'
-        )
 
         img_file = osp.join(
             osp.dirname(label_file), label_data['imagePath']
         )
         img = np.asarray(PIL.Image.open(img_file))
-        PIL.Image.fromarray(img).save(out_img_file)
+        out_img_file = osp.splitext(osp.basename(label_file))[0] + '.jpg'
+        PIL.Image.fromarray(img).save(osp.join(image_dir, out_img_file))
+
         data['images'].append(dict(
             license=0,
             url=None,
-            file_name=osp.relpath(out_img_file, osp.dirname(out_ann_file)),
+            file_name=out_img_file,
             height=img.shape[0],
             width=img.shape[1],
             date_captured=None,

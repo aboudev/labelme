@@ -2,6 +2,9 @@
 
 ## Annotation
 
+- Instance label string has the format of `.*-[0-9]*$`.
+- The `instance_label_auto_increment` feature can be turned off in the config file.
+
 ```bash
 labelme data_annotated --labels labels.txt --nodata
 ```
@@ -40,7 +43,7 @@ labelme_draw_label_png data_dataset_voc/SegmentationObjectPNG/2011_000003.png  #
 
 ```bash
 # It generates:
-#   - data_dataset_coco/JPEGImages
-#   - data_dataset_coco/annotations.json
-./labelme2coco.py data_annotated data_dataset_coco --labels labels.txt
+#   - data_dataset_coco/images
+#   - data_dataset_coco/annotations/instances_split.json
+./labelme2coco.py data_annotated data_dataset_coco --labels labels.txt --ann_split split.txt
 ```
